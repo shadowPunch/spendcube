@@ -1,0 +1,15 @@
+# Confidential task data: never commit
+data/
+*.zip
+*.pdf
+# Secrets
+.env
+# Generated
+.cache/
+runs/
+wandb/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.vscode/

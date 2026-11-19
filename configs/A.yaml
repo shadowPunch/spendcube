@@ -1,0 +1,68 @@
+# Company A: mining operations of a chemicals group. Two systems, ZAR.
+company: A
+reporting_currency: ZAR
+taxonomy: taxonomy_A.csv
+
+sources:
+  erp:
+    file: erp_goods_receipts.csv
+    id_prefix: "ERP:"
+    amount_is: net
+    currency: ZAR            # value_zar is already in ZAR whatever document_currency says
+    date_formats: ["%Y-%m-%d"]
+    columns:
+      record_id: line_id
+      supplier_name: supplier_name
+      supplier_id: vendor_id
+      description: material_short_text
+      item_code: material_number
+      quantity: quantity
+      unit: uom
+      amount: value_zar
+      date: posting_date
+      po_ref: po_number
+      po_line: po_item
+    context: [service_short_text, material_type, spend_type, site_name, opex_capex, contract_status]
+
+  tool:
+    file: invoice_tool_export.csv
+    id_prefix: "TOOL:"
+    amount_is: gross
+    default_tax_rate: 0.15   # brief: blank VAT rate means 15%
+    date_formats: ["%Y-%m-%d", "%d/%m/%Y", "%d-%b-%y"]
+    columns:
+      record_id: tool_record_id
+      invoice_ref: invoice_number
+      date: invoice_date
+      supplier_name: supplier_name_as_captured
+      po_ref: po_reference
+      description: line_text
+      quantity: quantity
+      amount: gross_amount
+      tax_rate: vat_rate
+      currency: currency
+      status: status
+    status:
+      approved: [Paid, Approved]
+      cancelled: [Cancelled]
+
+matching:
+  primary: erp
+  secondary: tool
+
+labels:
+  file: labels_A.csv
+  id_column: record_id
+  category_columns: [category_l1, category_l2, category_l3]
+  supplier_key_column: supplier_key
+  item_key_column: item_key
+
+classification_context: [service_short_text, material_type, spend_type]
+
+# A's golden keys (labels_A.csv) put everything outside its master data under one key each:
+# suppliers without a vendor-master ID (20,492 of 20,891 lines in the catch-all supplier key)
+# and catalogue / free-text items (2,659 of 2,661 lines in the catch-all item key). The output
+# keys follow that convention; classification still uses the real supplier and item groups.
+key_conventions:
+  shared_supplier_without_id: true
+  shared_item: {column: spend_type, pattern: "^(?:Catalogue|Free Text)$"}

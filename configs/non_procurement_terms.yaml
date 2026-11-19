@@ -1,0 +1,26 @@
+# Generic signs that a line is real money but not spend with a third-party supplier.
+# Matched as lower-case substrings of the description and the classification context
+# columns. A group fires when any `any` phrase is present and no `unless` phrase is.
+# Company-specific account codes belong in the company config, not here.
+
+groups:
+  - name: tax
+    any: [" sales tax", " use tax", "sales & use tax", " state & local tax", " local taxes",
+          " gst input", " input tax", " output tax", " withholding tax", " vat payable", " vat input",
+          " vat output", " tax payable", " tax expense", " excise tax", " property tax ", " payroll tax",
+          " impuesto", " iva ", " mehrwertsteuer", " tva "]
+    unless: [" service", " assist", " advis", " consult", " work", " sow", " audit", " garnish",
+             " research", " software", " prep "]
+  - name: intercompany
+    any: [" intercompany", " inter-company", " inter company", " i/c ", " ic payable",
+          " intragroup", " intra-group", " related party"]
+  - name: financing
+    any: [" interest expense", " interest charge", " loan repayment", " bank charge", " bank fee",
+          " dividend", " royalt", " finance charge", " late payment interest"]
+  - name: payroll
+    any: [" salary", " salaries", " payroll", " pension contribution", " social security"]
+    unless: [" service", " software", " consult"]
+
+# Payees that are tax authorities or similar, matched on the supplier name.
+supplier_any: [" revenue service", " receiver of revenue", " inland revenue", " tax authority",
+               " hmrc", " internal revenue"]

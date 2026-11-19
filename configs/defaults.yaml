@@ -1,0 +1,73 @@
+# Settings shared by every company. Tuned on companies A and B; see DECISIONS.md.
+
+# Normalisation
+max_date_gap_days: 366     # a date further than this from the fallback date is not trusted
+max_fx_ratio: 2.0          # a line FX rate more than 2x off the FX table is replaced
+
+# Cross-system matching and re-exports
+reexport_min_similarity: 60   # text similarity (0-100) for two exports of one invoice line
+match_min_text_similarity: 50 # tier 3 (supplier + amount) needs at least this text similarity
+
+# Supplier de-duplication
+supplier_fuzzy_threshold: 94  # rapidfuzz ratio on normalised names
+supplier_fuzzy_min_len: 8
+
+# Item de-duplication
+item_fuzzy_threshold: 90
+item_fuzzy_min_len: 8
+generic_code_min_descs: 5        # a code with this many different descriptions...
+generic_code_max_top_share: 0.5  # ...none of them dominant, is a catch-all code
+generic_code_min_suppliers: 20   # a code bought from this many suppliers is a catch-all code
+uninformative_descriptions:
+  - no object
+  - product
+  - products
+  - part
+  - parts
+  - item
+  - items
+  - service
+  - services
+  - goods
+  - material
+  - materials
+  - misc
+  - miscellaneous
+  - various
+  - sundry
+  - sundries
+  - general
+  - other
+  - n/a
+  - none
+  - tbc
+  - see attached
+  - as per quote
+  - as per invoice
+
+# Classification
+llm:
+  backend: codex              # codex | openai | none   (env SPENDCUBE_LLM overrides)
+  reasoning_effort: low       # 'minimal' measured unreliable: 52% vs 99.9% seed agreement on B's top items
+  timeout_seconds: 600
+  retries: 2
+  max_consecutive_failures: 3   # then stop calling the LLM for the rest of the run
+  concurrency: 4              # parallel LLM calls; each codex process is light
+  batch_size: 200             # items per call; codex adds ~10k input tokens of its own per call (no caching)
+  spend_coverage: 0.99        # share of describable spend the LLM labels (0.95: half the calls, ~8 pts lower B line accuracy)
+  max_items: 4000             # ...up to this many; a local model trained on its answers does the rest
+  codex:                      # AgentRouter through the Codex CLI
+    model: gpt-5.6-sol
+    base_url: https://agentrouter.org/v1
+    api_key_env: AGENTROUTER_API_KEY
+    # Codex is a coding agent; a short instructions file and no agent tools cut its
+    # fixed overhead per call from ~17k to ~10k input tokens.
+    instructions_file: configs/codex_instructions.md
+    disable_features: [apps, browser_use, browser_use_external, computer_use, image_generation,
+                       in_app_browser, multi_agent, personality, plugins, shell_tool, unified_exec,
+                       tool_search, tool_suggest, skill_mcp_dependency_install, workspace_dependencies]
+  openai:                     # any OpenAI-compatible endpoint with a direct key
+    model: gpt-4.1-mini
+    base_url: null
+    api_key_env: OPENAI_API_KEY
+llm_exclusion_min_confidence: 0.9   # the LLM's non-procurement flag excludes a line only at this confidence

@@ -1,0 +1,65 @@
+# Template for a new company. Copy to configs/<company>.yaml and fill in.
+# Look at the files first:  uv run spendcube profile data/<company>/<file>.csv
+# Paths are relative to the --data-dir folder. Unknown keys are rejected on load.
+
+company: Example
+reporting_currency: USD
+taxonomy: taxonomy.csv
+# taxonomy_columns: [L1 name, L2 name, L3 name, L4 name]  # only if the tree file has other columns (codes)
+# taxonomy_separator: " > "                               # only if the tree is one column of paths
+
+sources:
+  lines:                       # any name; A uses two sources (erp, tool)
+    file: invoice_lines.csv    # .csv, or .xlsx/.xls (then optionally `sheet:`)
+    # sep: ";"                 # CSV separator, default ","
+    # encoding: latin-1        # default utf-8-sig
+    # id_prefix: "INV:"        # prefix for record_id in the output
+    amount_is: net             # net | gross (gross: VAT removed via tax_amount or tax_rate)
+    # default_tax_rate: 0.15   # gross amounts with a blank tax rate
+    # currency: USD            # constant currency when there is no currency column
+    # rate_direction: reporting_per_unit  # if the line rate is USD per unit of currency (default: units per USD)
+    # credit: {column: dc_flag, values: [C, H, CR]}  # rows that must be negative
+    date_formats: ["%Y-%m-%d"] # tried in order, e.g. "%d/%m/%Y", "%d-%b-%y", "%d.%m.%Y"
+    # decimal: ","             # for amounts like 1.234,56
+    # duplicate_columns: [invoice_number, invoice_line, supplier_id, amount]  # what makes two rows
+    #                          # one record exported twice (default: every column but the ID)
+    # exact_duplicates: false  # if the file has no line number, identical rows may be genuine
+    columns:                   # canonical field: source column (a list takes the first non-empty;
+                               # for record_id a list is joined with '-')
+      record_id: line_id
+      supplier_name: supplier_name
+      supplier_id: vendor_id
+      description: line_description
+      item_code: material_number
+      quantity: quantity
+      unit: uom
+      amount: line_amount
+      # tax_rate: vat_rate
+      # tax_amount: vat_amount
+      currency: currency
+      fx_rate: currency_rate
+      date: invoice_date
+      fallback_date: posting_date
+      # status: status
+      po_ref: po_number
+      po_line: po_line
+      invoice_ref: invoice_number
+    context: [gl_account_description, cost_centre]   # extra columns for rules and the classifier
+    # status:                  # without this block every line counts as approved
+    #   approved: [Paid, Approved]
+    #   cancelled: [Cancelled, Void]
+
+# fx:                          # monthly rates for lines without a usable rate
+#   file: ../company_B/fx_rates_usd.csv
+#   currency_column: currency
+#   month_column: month        # YYYY-MM
+#   rate_column: units_per_usd
+#   rate_direction: units_per_reporting
+
+# matching: {primary: erp, secondary: tool}   # only when two systems hold the same purchases
+
+exclusion_rules:               # company-specific, on top of configs/non_procurement_terms.yaml
+  # - {column: gl_account_description, pattern: "intercompany|^IC\\d+$", reason: NON_PROCUREMENT}
+  # - {column: doc_status, pattern: "^(V|X)$", reason: CANCELLED}
+
+classification_context: [gl_account_description]  # context columns the classifier sees

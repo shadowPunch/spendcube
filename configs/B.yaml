@@ -1,0 +1,47 @@
+# Company B: metal packaging manufacturer. Eight ERPs, 25 currencies, reports in USD.
+company: B
+reporting_currency: USD
+taxonomy: taxonomy_B.csv
+
+sources:
+  lines:
+    file: invoice_lines.csv
+    amount_is: net
+    date_formats: ["%Y-%m-%d"]
+    columns:
+      record_id: line_id
+      supplier_id: vendor_id
+      description: line_description
+      item_code: material_number
+      quantity: quantity
+      amount: line_amount
+      currency: currency
+      fx_rate: currency_rate
+      date: invoice_date
+      fallback_date: posting_date
+      po_ref: po_number
+      po_line: po_line
+      invoice_ref: invoice_number
+    context: [gl_account, gl_account_description, document_type, supplier_type, po_type,
+              source_system, cost_centre, plant, company_code]
+
+fx:
+  file: fx_rates_usd.csv
+  currency_column: currency
+  month_column: month
+  rate_column: units_per_usd
+
+exclusion_rules:
+  # Intercompany payable accounts: every seed line on them is NON_PROCUREMENT.
+  - column: gl_account_description
+    pattern: "^IC\\d+$|^I/C|^IC Payable"
+    reason: NON_PROCUREMENT
+
+labels:
+  file: seed_labels.csv
+  id_column: line_id
+  category_columns: [category_l1, category_l2, category_l3]
+  include_column: include
+  reason_column: exclusion_reason
+
+classification_context: [gl_account, gl_account_description]
